@@ -1,0 +1,1694 @@
+<!DOCTYPE html><html lang="en"><head><meta name="x-poe-datastore-behavior" content="local_only"><meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://code.jquery.com https://unpkg.com https://d3js.org https://threejs.org https://cdn.plot.ly https://stackpath.bootstrapcdn.com https://maps.googleapis.com https://cdn.tailwindcss.com https://ajax.googleapis.com https://kit.fontawesome.com https://cdn.datatables.net https://maxcdn.bootstrapcdn.com https://code.highcharts.com https://tako-static-assets-production.s3.amazonaws.com https://www.youtube.com https://fonts.googleapis.com https://fonts.gstatic.com https://pfst.cf2.poecdn.net https://puc.poecdn.net https://i.imgur.com https://wikimedia.org https://*.icons8.com https://*.giphy.com https://picsum.photos https://images.unsplash.com; frame-src 'self' https://www.youtube.com https://trytako.com; child-src 'self'; manifest-src 'self'; worker-src 'self'; upgrade-insecure-requests; block-all-mixed-content;">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vibe Flow</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --panel-2: #0b1220;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --primary: #60a5fa;
+      --primary-2: #3b82f6;
+      --accent: #22d3ee;
+      --danger: #ef4444;
+      --ok: #10b981;
+      --warn: #f59e0b;
+      --shadow: 0 10px 30px rgba(0,0,0,0.35);
+      --radius: 14px;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1200px 800px at 80% -10%, #1f2937, #0b1220 55%, #050816 100%);
+      color: var(--text);
+    }
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px clamp(12px, 4vw, 28px) 60px;
+    }
+    header {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      margin: 12px 0 24px;
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(1.4rem, 4.5vw, 2rem);
+      letter-spacing: 0.3px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    h1 .dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--primary));
+      box-shadow: 0 0 12px var(--accent), 0 0 24px var(--primary);
+    }
+
+    .card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: clamp(14px, 2.5vw, 22px);
+      margin-bottom: 16px;
+      backdrop-filter: blur(6px);
+    }
+
+    /* Add exercise form */
+    .add-form {
+      display: grid;
+      grid-template-columns: 1.2fr 0.5fr 0.5fr auto;
+      gap: 10px;
+      align-items: end;
+    }
+    .field { display: grid; gap: 6px; }
+    label { color: var(--muted); font-size: 0.92rem; }
+    input[type="text"], input[type="number"], select, input[type="range"] {
+      width: 100%;
+      padding: 12px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.04);
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+    }
+    input[type="range"] { padding: 0; }
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    input:focus, select:focus {
+      border-color: rgba(96,165,250,0.7);
+      background: rgba(96,165,250,0.08);
+      box-shadow: 0 0 0 4px rgba(59,130,246,0.15);
+    }
+
+    .btn {
+      appearance: none;
+      border: none;
+      border-radius: 10px;
+      padding: 12px 14px;
+      color: white;
+      background: linear-gradient(135deg, var(--primary), var(--primary-2));
+      cursor: pointer;
+      transition: transform 0.06s ease, filter 0.2s ease, opacity 0.2s;
+      white-space: nowrap;
+    }
+    .btn:hover { filter: brightness(1.05); }
+    .btn:active { transform: translateY(1px) scale(0.995); }
+    .btn.secondary {
+      background: linear-gradient(135deg, #6b7280, #4b5563);
+    }
+    .btn.ghost {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.14);
+      color: var(--text);
+    }
+    .btn.danger { background: linear-gradient(135deg, #f87171, #ef4444); }
+    .btn.ok { background: linear-gradient(135deg, #34d399, #10b981); }
+    .btn.warn { background: linear-gradient(135deg, #fbbf24, #f59e0b); }
+
+    /* Exercise list */
+    .list {
+      display: grid; gap: 10px;
+    }
+    .item {
+      display: grid;
+      grid-template-columns: 1fr auto auto auto;
+      gap: 10px;
+      align-items: center;
+      padding: 12px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.07);
+    }
+    .item .name { font-weight: 600; }
+    .duration {
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+      margin-left: 6px;
+    }
+    .item .actions {
+      display: flex; gap: 6px;
+    }
+    .icon-btn {
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.10);
+      color: var(--text);
+      cursor: pointer;
+    }
+    .icon-btn:hover { background: rgba(255,255,255,0.10); }
+
+    .total {
+      display: flex; justify-content: space-between; align-items: center;
+      color: var(--muted); margin-top: 6px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .controls {
+      display: flex; flex-wrap: wrap; gap: 10px;
+      align-items: center; justify-content: flex-start;
+      margin-top: 8px;
+    }
+
+    .session {
+      display: grid; gap: 14px;
+    }
+    .session-header {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    }
+    .current-ex {
+      font-size: clamp(1.05rem, 3.8vw, 1.4rem);
+      font-weight: 600;
+    }
+    .timer {
+      display: grid; gap: 12px;
+      background: radial-gradient(600px 180px at 50% -60%, rgba(34,211,238,0.12), rgba(96,165,250,0.08) 50%, transparent 80%);
+      padding: 16px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .big-time {
+      font-size: clamp(2rem, 14vw, 5rem);
+      line-height: 1;
+      letter-spacing: 1px;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+      text-shadow: 0 6px 30px rgba(34,211,238,0.25);
+    }
+    .progress-wrap {
+      height: 12px; width: 100%;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 999px; overflow: hidden;
+    }
+    .progress {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--primary));
+      box-shadow: 0 0 12px rgba(34,211,238,0.8);
+      transition: width 0.15s linear;
+    }
+    .next-line { color: var(--muted); font-size: 0.95rem; }
+    .muted { color: var(--muted); }
+
+    .row {
+      display: grid; gap: 10px;
+      grid-template-columns: 1fr 1fr;
+    }
+    .settings {
+      display: grid; gap: 10px;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .saved {
+      display: grid; gap: 10px;
+    }
+    .saved-item {
+      display: flex; gap: 8px; align-items: center; justify-content: space-between;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .saved-item .title { font-weight: 600; }
+
+    .hidden { display: none !important; }
+    .small { font-size: 0.9rem; }
+    .pill {
+      font-size: 0.82rem; padding: 4px 8px; border-radius: 999px;
+      background: rgba(59,130,246,0.18);
+      border: 1px solid rgba(59,130,246,0.35);
+      color: #cfe3ff;
+    }
+
+    footer {
+      margin-top: 28px; color: var(--muted);
+      font-size: 0.9rem; text-align: center;
+    }
+
+    /* Background Music */
+    .bgm-list .bgm-item {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px; align-items: center;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .bgm-meta {
+      display: grid; gap: 6px;
+    }
+    .bgm-title { font-weight: 600; }
+    .bgm-sub { color: var(--muted); font-size: 0.88rem; }
+    .bgm-actions { display: flex; gap: 6px; align-items: center; }
+    .bgm-actions .icon-btn { padding: 6px 8px; }
+    .bgm-vol-wrap { display: flex; align-items: center; gap: 8px; }
+    .bgm-vol-wrap input[type="range"] { width: 180px; }
+
+    .file-hint { color: var(--muted); font-size: 0.9rem; }
+
+    @media (max-width: 820px) {
+      .add-form { grid-template-columns: 1.1fr 0.6fr 0.6fr; }
+      .add-form .btn { grid-column: 1 / -1; }
+      .item { grid-template-columns: 1fr auto; }
+      .item .duration { display: inline-block; margin-left: 0; }
+      .item .actions { grid-column: 1 / -1; }
+      .row { grid-template-columns: 1fr; }
+      .settings { grid-template-columns: 1fr; }
+      .bgm-vol-wrap input[type="range"] { width: 100%; }
+    }
+
+    @media (max-width: 420px) {
+      header { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+<script src="https://puc.poecdn.net/authenticated_preview_page/syncedState.3f7572448765332f3047.js"></script></head>
+<body>
+  <div class="container">
+    <header>
+      <h1><span class="dot"></span> Vibe Flow</h1>
+      <span class="pill">English + 中文（普通话）</span>
+    </header>
+
+    <!-- Builder -->
+    <section class="card">
+      <h2 style="margin-top:0;margin-bottom:12px;font-size:1.1rem;">Build your flow</h2>
+      <form id="addForm" class="add-form" autocomplete="off">
+        <div class="field">
+          <label for="exName">Exercise</label>
+          <input id="exName" type="text" placeholder="e.g., Squat, 下犬式" required="">
+        </div>
+        <div class="field">
+          <label for="exMin">Minutes</label>
+          <input id="exMin" type="number" inputmode="numeric" min="0" max="999" step="1" placeholder="0">
+        </div>
+        <div class="field">
+          <label for="exSec">Seconds</label>
+          <input id="exSec" type="number" inputmode="numeric" min="0" max="59" step="1" placeholder="30">
+        </div>
+        <button type="submit" class="btn" title="Add exercise">Add</button>
+      </form>
+
+      <div style="margin-top:14px;">
+        <div id="list" class="list" aria-live="polite"></div>
+        <div id="emptyHint" class="muted small" style="text-align:center;padding:10px 6px;">
+          Your list is empty. Add an exercise above (name + minutes/seconds).
+        </div>
+        <div class="total">
+          <div>Total exercises: <strong id="count">0</strong></div>
+          <div>Total time: <strong id="total">00:00</strong></div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button id="startBtn" type="button" class="btn ok" title="Start the flow">Start</button>
+        <button id="pauseBtn" type="button" class="btn warn" title="Pause/Resume" disabled="">Pause</button>
+        <button id="resetBtn" type="button" class="btn ghost" title="Reset / Clear">Reset</button>
+        <span class="muted small" id="hintTapAudio" style="margin-left:auto;">Tip: ensure your device volume is on.</span>
+      </div>
+    </section>
+
+    <!-- Session -->
+    <section id="sessionCard" class="card session hidden" aria-live="polite">
+      <div class="session-header">
+        <div class="current-ex" id="currentName">Ready</div>
+        <div class="muted small" id="stepCounter">0 / 0</div>
+      </div>
+      <div class="timer">
+        <div class="big-time" id="bigTime">00:00</div>
+        <div class="progress-wrap"><div id="progress" class="progress"></div></div>
+        <div class="next-line" id="nextLine"></div>
+      </div>
+      <div class="controls">
+        <button id="pauseBtn2" type="button" class="btn warn" disabled="">Pause</button>
+        <button id="skipBtn" type="button" class="btn secondary" disabled="">Skip</button>
+        <button id="backBtn" type="button" class="btn secondary" disabled="">Back</button>
+        <button id="finishBtn" type="button" class="btn ghost" disabled="">Finish</button>
+      </div>
+    </section>
+
+    <!-- Voice & Sounds -->
+    <section class="card">
+      <h2 style="margin-top:0;margin-bottom:12px;font-size:1.1rem;">Voice &amp; Sounds</h2>
+      <div class="settings">
+        <div class="field">
+          <label for="announceLang">Announcement language</label>
+          <select id="announceLang">
+            <option value="en">English</option>
+            <option value="zh-CN">中文（普通话）</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="voiceSelect">Voice (natural preferred)</label>
+          <select id="voiceSelect"></select>
+          <div class="muted small">Only English and Mandarin voices are listed.</div>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label for="voiceRate">Voice rate</label>
+            <input id="voiceRate" type="range" min="0.6" max="1.2" step="0.01" value="0.95">
+            <div class="muted small"><span id="voiceRateVal">0.95</span>x</div>
+          </div>
+          <div class="field">
+            <label for="voicePitch">Voice pitch</label>
+            <input id="voicePitch" type="range" min="0.8" max="1.4" step="0.01" value="1.05">
+            <div class="muted small"><span id="voicePitchVal">1.05</span></div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label for="voiceVolume">Voice volume</label>
+            <input id="voiceVolume" type="range" min="0" max="1" step="0.01" value="0.9">
+            <div class="muted small"><span id="voiceVolumeVal">0.90</span></div>
+          </div>
+          <div class="field">
+            <label>Countdown beeps</label>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+              <button id="toggleBeeps" type="button" class="btn">On</button>
+              <div class="field" style="min-width:200px;">
+                <label for="beepWindow" class="small">Beep for last (seconds)</label>
+                <input id="beepWindow" type="number" min="1" max="60" step="1" value="5">
+                <div class="muted small">Default 5 seconds</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="controls">
+          <button id="testVoiceBtn" type="button" class="btn">Test voice</button>
+          <button id="testBeepsBtn" type="button" class="btn ghost">Test beeps</button>
+        </div>
+        <div class="muted small">Tip: For the most natural voices, enable “Enhanced/Neural” system voices in your OS/browser (e.g., Google/Microsoft/Siri voices).</div>
+      </div>
+    </section>
+
+    <!-- Background Music -->
+    <section class="card">
+      <h2 style="margin-top:0;margin-bottom:12px;font-size:1.1rem;">Background Music (optional)</h2>
+      <input id="bgmInput" type="file" accept="audio/mpeg,audio/mp3,audio/*" multiple="" class="hidden">
+      <div class="controls">
+        <button id="bgmAddBtn" type="button" class="btn">Add music (MP3)</button>
+        <button id="bgmClearBtn" type="button" class="btn ghost">Clear all music</button>
+        <span class="file-hint">Up to 5 tracks. Set their order and volume below.</span>
+      </div>
+      <div id="bgmList" class="bgm-list" aria-live="polite"></div>
+      <div class="muted small">Note: Background music is saved with your flow locally on this device. Large files take storage space.</div>
+    </section>
+
+    <!-- Save / Load -->
+    <section class="card">
+      <h2 style="margin-top:0;margin-bottom:12px;font-size:1.1rem;">Save your flow</h2>
+      <div class="row">
+        <div class="field">
+          <label for="flowName">Flow name</label>
+          <input id="flowName" type="text" placeholder="e.g., Morning Flow">
+        </div>
+        <div class="controls">
+          <button id="saveBtn" type="button" class="btn" title="Save to this device">Save</button>
+          <button id="clearAllBtn" type="button" class="btn danger" title="Delete all saved flows">Clear all saved</button>
+        </div>
+      </div>
+      <div class="saved" id="savedList"></div>
+    </section>
+
+    <footer>
+      Works offline in your browser. Your flows are saved locally on this device.
+    </footer>
+  </div>
+
+  <script>
+    // ---------- Utilities ----------
+    const $ = (sel, root=document) => root.querySelector(sel);
+    const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+
+    const clamp = (n, min, max) => Math.min(max, Math.max(min, n|0));
+    const pad2 = n => String(n|0).padStart(2, '0');
+    const fmtMMSS = totalSec => {
+      const s = Math.max(0, Math.round(totalSec));
+      return `${pad2(Math.floor(s/60))}:${pad2(s%60)}`;
+    };
+    const humanize = (totalSec) => {
+      const s = Math.round(totalSec);
+      const m = Math.floor(s/60);
+      const r = s % 60;
+      const parts = [];
+      if (m) parts.push(`${m} ${m===1?'minute':'minutes'}`);
+      if (r) parts.push(`${r} ${r===1?'second':'seconds'}`);
+      if (!parts.length) return '0 seconds';
+      return parts.join(' ');
+    };
+    function escapeHtml(s) {
+      return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    // ---------- State ----------
+    const state = {
+      exercises: [], // {id, name, seconds}
+      running: false,
+      paused: false,
+      currentIndex: -1,
+      remainingSec: 0,
+      fullDurationSec: 0,
+      endTimeMs: 0,
+      tickId: null,
+      audioCtx: null,
+      beepsOn: true,
+      beepWindowSec: 5,
+
+      // Voice state
+      voicesAll: [],
+      voicesEn: [],
+      voicesZh: [],
+      voiceEn: null,
+      voiceZh: null,
+      announceLang: 'en',
+      voiceRate: 0.95,
+      voicePitch: 1.05,
+      voiceVolume: 0.9,
+
+      // Saved flows (fetched from IndexedDB when needed)
+      savedCache: [], // [{name, exercises[], bgm[], updatedAt}]
+
+      // Background music
+      bgm: {
+        tracks: [], // [{id, name, url, volume, blob?, hash?, type?}]
+        audio: null,
+        currentIndex: 0,
+        playing: false
+      }
+    };
+
+    // ---------- DOM refs ----------
+    const listEl = $('#list');
+    const emptyHintEl = $('#emptyHint');
+    const totalEl = $('#total');
+    const countEl = $('#count');
+
+    const startBtn = $('#startBtn');
+    const pauseBtn = $('#pauseBtn');
+    const resetBtn = $('#resetBtn');
+
+    const sessionCard = $('#sessionCard');
+    const currentNameEl = $('#currentName');
+    const bigTimeEl = $('#bigTime');
+    const progressEl = $('#progress');
+    const nextLineEl = $('#nextLine');
+    const stepCounterEl = $('#stepCounter');
+
+    const pauseBtn2 = $('#pauseBtn2');
+    const skipBtn = $('#skipBtn');
+    const backBtn = $('#backBtn');
+    const finishBtn = $('#finishBtn');
+
+    const flowNameEl = $('#flowName');
+    const savedListEl = $('#savedList');
+    const toggleBeepsBtn = $('#toggleBeeps');
+    const beepWindowInput = $('#beepWindow');
+
+    const announceLangSel = $('#announceLang');
+    const voiceSelect = $('#voiceSelect');
+    const voiceRate = $('#voiceRate');
+    const voicePitch = $('#voicePitch');
+    const voiceVolume = $('#voiceVolume');
+    const voiceRateVal = $('#voiceRateVal');
+    const voicePitchVal = $('#voicePitchVal');
+    const voiceVolumeVal = $('#voiceVolumeVal');
+
+    // BGM refs
+    const bgmInput = $('#bgmInput');
+    const bgmAddBtn = $('#bgmAddBtn');
+    const bgmClearBtn = $('#bgmClearBtn');
+    const bgmList = $('#bgmList');
+
+    // ---------- Audio (Beeps) ----------
+    function ensureAudio() {
+      if (!state.audioCtx) {
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        if (!Ctx) return null;
+        state.audioCtx = new Ctx();
+      }
+      if (state.audioCtx.state === 'suspended') {
+        state.audioCtx.resume().catch(()=>{});
+      }
+      return state.audioCtx;
+    }
+
+    function beep({freq=880, dur=120, type='sine', vol=0.15}={}) {
+      if (!state.beepsOn) return;
+      const ctx = ensureAudio();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, now);
+      gain.gain.setValueAtTime(0, now);
+      osc.connect(gain).connect(ctx.destination);
+      gain.gain.linearRampToValueAtTime(vol, now + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + dur/1000);
+      osc.start(now);
+      osc.stop(now + dur/1000 + 0.02);
+    }
+
+    function testBeeps() {
+      const ctx = ensureAudio(); if (!ctx) return;
+      const n = clamp(parseInt(beepWindowInput.value || '5', 10), 1, 60);
+      const start = ctx.currentTime + 0.05;
+      for (let i = 0; i < n; i++) {
+        const t = start + i * 0.4;
+        const secsLeft = n - i;
+        const step = Math.max(0, n - secsLeft);
+        const freq = 700 + step * 30;
+        scheduleBeepAt(t, {freq, dur:130, type:'sine', vol:0.18});
+      }
+      scheduleBeepAt(start + n * 0.4 + 0.2, {freq:1020, dur:200, type:'triangle', vol:0.2});
+    }
+    function scheduleBeepAt(when, opts={}) {
+      const ctx = ensureAudio(); if (!ctx) return;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = opts.type || 'sine';
+      osc.frequency.setValueAtTime(opts.freq || 880, when);
+      gain.gain.setValueAtTime(0.0001, when);
+      gain.gain.exponentialRampToValueAtTime(opts.vol || 0.15, when + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, when + (opts.dur||120)/1000);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(when);
+      osc.stop(when + (opts.dur||120)/1000 + 0.02);
+    }
+
+    // ---------- Voice (SpeechSynthesis) ----------
+    function loadVoices() {
+      const v = window.speechSynthesis?.getVoices?.() || [];
+      state.voicesAll = v;
+      const isEnglish = (lang) => /^en([-_]|$)/i.test(lang);
+      const isMandarin = (lang) => {
+        const l = (lang || '').toLowerCase();
+        return (l.startsWith('zh') || l.includes('cmn')) && !l.startsWith('yue');
+      };
+      state.voicesEn = v.filter(x => isEnglish(x.lang || 'en'));
+      state.voicesZh = v.filter(x => isMandarin(x.lang || 'zh-CN'));
+      state.voiceEn = pickDefaultVoice(state.voicesEn, 'en');
+      state.voiceZh = pickDefaultVoice(state.voicesZh, 'zh-CN');
+      populateVoiceSelect();
+    }
+
+    function scoreVoiceBase(voice) {
+      const name = (voice.name || '').toLowerCase();
+      let s = 0;
+      if (voice.default) s += 2;
+      if (name.includes('female')) s += 2;
+      if (name.includes('neural') || name.includes('natural')) s += 4;
+      if (name.includes('google')) s += 3;
+      if (name.includes('microsoft')) s += 3;
+      if (name.includes('siri') || name.includes('apple')) s += 3;
+      return s;
+    }
+    function scoreVoiceForLang(voice, lang) {
+      const name = (voice.name || '').toLowerCase();
+      const vlang = (voice.lang || '').toLowerCase();
+      let s = scoreVoiceBase(voice);
+      if (lang === 'en') {
+        if (vlang.includes('en-us')) s += 3;
+        const preferred = ['samantha','victoria','karen','moira','tessa','zira','aria','jenny','allison','amy','emma','olivia','linda'];
+        if (preferred.some(n => name.includes(n))) s += 3;
+        if (name.includes('google') && (name.includes('us') || name.includes('female'))) s += 2;
+      } else {
+        if (vlang.includes('zh-cn') || vlang.includes('cmn') || vlang.includes('hans')) s += 4;
+        const preferredZh = ['xiaoxiao','xiaoyi','yunxi','ting-ting','huihui','yating','lanlan','zh-cn','mandarin','普通话'];
+        if (preferredZh.some(n => name.includes(n))) s += 4;
+        if (name.includes('google') && (name.includes('mandarin') || name.includes('普通话'))) s += 2;
+      }
+      return s;
+    }
+    function pickDefaultVoice(list, lang) {
+      if (!list || !list.length) return null;
+      return [...list].sort((a,b)=>scoreVoiceForLang(b, lang)-scoreVoiceForLang(a, lang))[0];
+    }
+
+    function populateVoiceSelect() {
+      const lang = state.announceLang;
+      const list = lang === 'en' ? state.voicesEn : state.voicesZh;
+      const chosen = lang === 'en' ? state.voiceEn : state.voiceZh;
+
+      voiceSelect.innerHTML = '';
+      const fragment = document.createDocumentFragment();
+
+      if (!list.length) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = 'System default (no matching voices found)';
+        fragment.appendChild(opt);
+        voiceSelect.disabled = true;
+      } else {
+        list.forEach((voice, idx) => {
+          const opt = document.createElement('option');
+          opt.value = String(idx);
+          opt.textContent = `${voice.name} — ${voice.lang}${voice.default ? ' (default)' : ''}`;
+          fragment.appendChild(opt);
+        });
+        voiceSelect.disabled = false;
+      }
+      voiceSelect.appendChild(fragment);
+
+      if (chosen && list.length) {
+        const idx = list.indexOf(chosen);
+        voiceSelect.value = idx >= 0 ? String(idx) : '0';
+      }
+    }
+
+    function speak(text, { onend, requireRunning=false } = {}) {
+      const synth = window.speechSynthesis;
+      const lang = state.announceLang;
+      const selectedVoice = lang === 'en' ? state.voiceEn : state.voiceZh;
+
+      if (!synth || !window.SpeechSynthesisUtterance) {
+        const ms = Math.min(1500, Math.max(600, text.length * 20));
+        const id = setTimeout(() => {
+          if (requireRunning && !state.running) return;
+          onend && onend();
+        }, ms);
+        state.resumeAfterSpeakFallbackId = id;
+        return;
+      }
+
+      try { synth.cancel(); } catch(e){}
+
+      const u = new SpeechSynthesisUtterance(text);
+      if (selectedVoice) u.voice = selectedVoice;
+      u.lang = selectedVoice?.lang || (lang === 'en' ? 'en-US' : 'zh-CN');
+      u.rate = state.voiceRate;
+      u.pitch = state.voicePitch;
+      u.volume = state.voiceVolume;
+      u.onend = () => {
+        if (requireRunning && !state.running) return;
+        onend && onend();
+      };
+      u.onerror = () => {
+        if (requireRunning && !state.running) return;
+        onend && onend();
+      };
+      synth.speak(u);
+    }
+
+    // ---------- Builder ----------
+    function recalcTotals() {
+      const total = state.exercises.reduce((a, e) => a + e.seconds, 0);
+      state.fullDurationSec = total;
+      countEl.textContent = String(state.exercises.length);
+      totalEl.textContent = fmtMMSS(total);
+      emptyHintEl.classList.toggle('hidden', state.exercises.length > 0);
+      resetBtn.disabled = !state.running && state.exercises.length === 0;
+    }
+
+    function renderList() {
+      listEl.innerHTML = '';
+      state.exercises.forEach((ex, idx) => {
+        const row = document.createElement('div');
+        row.className = 'item';
+        row.dataset.id = ex.id;
+
+        const title = document.createElement('div');
+        title.innerHTML = `<span class="name">${escapeHtml(ex.name)}</span> <span class="duration">— ${fmtMMSS(ex.seconds)}</span>`;
+
+        const reorder = document.createElement('div');
+        reorder.className = 'actions';
+        const up = buttonIcon('↑', 'Move up');
+        up.addEventListener('click', () => { moveExercise(idx, -1); });
+        const down = buttonIcon('↓', 'Move down');
+        down.addEventListener('click', () => { moveExercise(idx, +1); });
+        const edit = buttonIcon('✎', 'Edit');
+        edit.addEventListener('click', () => { showEditRow(row, ex, idx); });
+        const del = buttonIcon('✕', 'Delete', 'danger');
+        del.addEventListener('click', () => { removeExercise(idx); });
+
+        reorder.append(up, down, edit, del);
+        row.append(title, document.createElement('div'), document.createElement('div'), reorder);
+        listEl.appendChild(row);
+      });
+      recalcTotals();
+    }
+
+    function buttonIcon(label, title, colorClass) {
+      const b = document.createElement('button');
+      b.className = 'icon-btn' + (colorClass ? ' '+colorClass : '');
+      b.type = 'button';
+      b.title = title || '';
+      b.textContent = label;
+      return b;
+    }
+
+    function showEditRow(container, ex, idx) {
+      const editor = document.createElement('div');
+      editor.className = 'item';
+      const nameIn = document.createElement('input');
+      nameIn.type = 'text';
+      nameIn.value = ex.name;
+      nameIn.className = 'nameIn';
+      nameIn.style.minWidth = '120px';
+      const minIn = document.createElement('input');
+      minIn.type = 'number'; minIn.min = '0'; minIn.max = '999'; minIn.step = '1';
+      minIn.value = Math.floor(ex.seconds/60);
+      const secIn = document.createElement('input');
+      secIn.type = 'number'; secIn.min = '0'; secIn.max = '59'; secIn.step = '1';
+      secIn.value = ex.seconds % 60;
+
+      const actions = document.createElement('div'); actions.className = 'actions';
+      const save = buttonIcon('✔', 'Save');
+      const cancel = buttonIcon('⟲', 'Cancel');
+      save.addEventListener('click', () => {
+        const name = nameIn.value.trim();
+        let m = clamp(parseInt(minIn.value||'0',10), 0, 999);
+        let s = clamp(parseInt(secIn.value||'0',10), 0, 59);
+        if (!name) { alert('Please enter a name.'); return; }
+        if (m === 0 && s === 0) { alert('Duration must be > 0.'); return; }
+        state.exercises[idx] = { ...ex, name, seconds: m*60 + s };
+        renderList();
+      });
+      cancel.addEventListener('click', renderList);
+      actions.append(save, cancel);
+
+      editor.append(
+        elWrap('div', [nameIn]),
+        elWrap('div', [minIn]),
+        elWrap('div', [secIn]),
+        actions
+      );
+      container.replaceWith(editor);
+      nameIn.focus();
+    }
+
+    function elWrap(tag, children=[]) {
+      const d = document.createElement('div');
+      d.append(...children);
+      return d;
+    }
+
+    function addExercise(name, minutes, seconds) {
+      const ex = {
+        id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()),
+        name,
+        seconds: minutes*60 + seconds
+      };
+      state.exercises.push(ex);
+      renderList();
+    }
+
+    function moveExercise(idx, delta) {
+      const j = idx + delta;
+      if (j < 0 || j >= state.exercises.length) return;
+      const arr = state.exercises;
+      [arr[idx], arr[j]] = [arr[j], arr[idx]];
+      renderList();
+    }
+
+    function removeExercise(idx) {
+      state.exercises.splice(idx, 1);
+      renderList();
+    }
+
+    function clearExercises() {
+      if (!state.exercises.length) return;
+      if (!confirm('Clear all exercises in the current list?')) return;
+      state.exercises = [];
+      renderList();
+    }
+
+    // ---------- Session (Timer) ----------
+    function startFlow() {
+      if (state.exercises.length === 0) {
+        alert('Add at least one exercise.');
+        return;
+      }
+      if (state.running) {
+        if (!confirm('Restart the flow?')) return;
+        stopFlow();
+      }
+      ensureAudio();
+
+      state.running = true;
+      state.paused = false;
+      state.currentIndex = 0;
+      state.remainingSec = state.exercises[0].seconds;
+      updateSessionUI(true);
+
+      setBuilderEnabled(false);
+      setBgmEnabled(false);
+      resetBtn.disabled = false;
+
+      bgmStart();
+      announceThenStart();
+    }
+
+    function setBuilderEnabled(enabled) {
+      $('#exName').disabled = !enabled;
+      $('#exMin').disabled = !enabled;
+      $('#exSec').disabled = !enabled;
+      $('#addForm button[type="submit"]').disabled = !enabled;
+      $$('.item .icon-btn').forEach(b => b.disabled = !enabled);
+      startBtn.disabled = !enabled;
+      pauseBtn.disabled = !enabled;
+    }
+
+    function setBgmEnabled(enabled) {
+      bgmAddBtn.disabled = !enabled;
+      bgmClearBtn.disabled = !enabled;
+      $$('.bgm-list .icon-btn').forEach(b => b.disabled = !enabled);
+      $$('.bgm-list input[type="range"]').forEach(r => r.disabled = !enabled);
+    }
+
+    function announceThenStart() {
+      const ex = currentExercise();
+      if (!ex) return;
+      pauseBtn.disabled = false;
+      pauseBtn2.disabled = false;
+      finishBtn.disabled = false;
+      skipBtn.disabled = false;
+      backBtn.disabled = state.currentIndex <= 0;
+
+      speak(ex.name, { onend: () => beginCountdown(), requireRunning: true });
+      setTimeout(() => {
+        if (!state.tickId && state.running && !state.paused) beginCountdown();
+      }, 2500);
+    }
+
+    function beginCountdown() {
+      if (!state.running || state.currentIndex < 0) return;
+
+      if (state.tickId) clearInterval(state.tickId);
+      state.endTimeMs = performance.now() + (state.remainingSec * 1000);
+      let lastWhole = Math.ceil(state.remainingSec);
+
+      state.tickId = setInterval(() => {
+        const now = performance.now();
+        const remMs = state.endTimeMs - now;
+        let rem = Math.max(0, remMs / 1000);
+        const whole = Math.ceil(rem);
+
+        if (state.beepsOn && whole !== lastWhole && whole > 0 && whole <= state.beepWindowSec) {
+          const step = Math.max(0, state.beepWindowSec - whole);
+          const freq = 700 + step * 30;
+          beep({freq, dur: 140, type: 'sine', vol: 0.16});
+        }
+        lastWhole = whole;
+
+        state.remainingSec = rem;
+        updateSessionUI();
+
+        if (rem <= 0.05) {
+          clearInterval(state.tickId);
+          state.tickId = null;
+          nextExercise();
+        }
+      }, 100);
+    }
+
+    function pauseFlow() {
+      if (!state.running) return;
+      if (!state.paused) {
+        state.paused = true;
+        if (state.tickId) { clearInterval(state.tickId); state.tickId = null; }
+        try { window.speechSynthesis?.cancel?.(); } catch(e){}
+        bgmPause();
+        updatePauseButtons();
+      } else {
+        state.paused = false;
+        state.endTimeMs = performance.now() + (Math.max(0.05, state.remainingSec) * 1000);
+        beginCountdown();
+        bgmResume();
+        updatePauseButtons();
+      }
+    }
+
+    function stopFlow(finished=false) {
+      try { if (state.resumeAfterSpeakFallbackId) clearTimeout(state.resumeAfterSpeakFallbackId); } catch(e){}
+      state.resumeAfterSpeakFallbackId = null;
+
+      try { window.speechSynthesis?.cancel?.(); } catch(e){}
+      if (state.tickId) { clearInterval(state.tickId); state.tickId = null; }
+
+      bgmStop();
+
+      state.running = false;
+      state.paused = false;
+      state.currentIndex = -1;
+      state.remainingSec = 0;
+
+      updateSessionUI(true);
+      setBuilderEnabled(true);
+      setBgmEnabled(true);
+
+      pauseBtn.disabled = true;
+      pauseBtn2.disabled = true;
+      resetBtn.disabled = state.exercises.length === 0;
+      skipBtn.disabled = true;
+      backBtn.disabled = true;
+      finishBtn.disabled = true;
+      startBtn.disabled = false;
+
+      if (finished) {
+        setTimeout(()=> {
+          beep({freq: 900, dur: 140, type:'triangle', vol: 0.18});
+          setTimeout(()=> beep({freq: 1200, dur: 180, type:'triangle', vol: 0.18}), 200);
+        }, 50);
+      }
+    }
+
+    function nextExercise() {
+      if (!state.running) return;
+      if (state.currentIndex < state.exercises.length - 1) {
+        state.currentIndex += 1;
+        state.remainingSec = currentExercise().seconds;
+        updateSessionUI(true);
+        announceThenStart();
+      } else {
+        stopFlow(true);
+      }
+    }
+
+    function backExercise() {
+      if (!state.running || state.currentIndex <= 0) return;
+      if (state.tickId) { clearInterval(state.tickId); state.tickId = null; }
+      try { window.speechSynthesis?.cancel?.(); } catch(e){}
+      state.currentIndex -= 1;
+      state.remainingSec = currentExercise().seconds;
+      updateSessionUI(true);
+      announceThenStart();
+    }
+
+    function skipExercise() {
+      if (!state.running || state.currentIndex < 0) return;
+      if (state.tickId) { clearInterval(state.tickId); state.tickId = null; }
+      try { window.speechSynthesis?.cancel?.(); } catch(e){}
+      nextExercise();
+    }
+
+    function currentExercise() {
+      return state.exercises[state.currentIndex] || null;
+    }
+
+    function updatePauseButtons() {
+      const label = state.paused ? 'Resume' : 'Pause';
+      pauseBtn.textContent = label;
+      pauseBtn2.textContent = label;
+    }
+
+    function updateSessionUI(forceShow=false) {
+      if (forceShow) sessionCard.classList.remove('hidden');
+
+      const ex = currentExercise();
+      if (!state.running || !ex) {
+        currentNameEl.textContent = 'Ready';
+        bigTimeEl.textContent = '00:00';
+        progressEl.style.width = '0%';
+        nextLineEl.textContent = '';
+        stepCounterEl.textContent = `0 / ${state.exercises.length}`;
+        return;
+      }
+      currentNameEl.textContent = ex.name;
+      const elapsed = ex.seconds - state.remainingSec;
+      const pct = Math.max(0, Math.min(100, (elapsed / ex.seconds) * 100));
+      progressEl.style.width = `${pct}%`;
+      bigTimeEl.textContent = fmtMMSS(state.remainingSec);
+      stepCounterEl.textContent = `${state.currentIndex+1} / ${state.exercises.length}`;
+
+      const hasNext = state.currentIndex < state.exercises.length - 1;
+      nextLineEl.textContent = hasNext ? `Next: ${state.exercises[state.currentIndex+1].name} (${fmtMMSS(state.exercises[state.currentIndex+1].seconds)})` : 'Last exercise';
+      resetBtn.disabled = false;
+      startBtn.disabled = true;
+      updatePauseButtons();
+    }
+
+    // ---------- Background Music ----------
+    const BGM_MAX = 5;
+
+    function addBgmFiles(fileList) {
+      const files = Array.from(fileList || []);
+      if (!files.length) return;
+      const spaceLeft = Math.max(0, BGM_MAX - state.bgm.tracks.length);
+      const toAdd = files.slice(0, spaceLeft);
+      if (files.length > spaceLeft) {
+        alert(`You can add up to ${BGM_MAX} tracks. Only the first ${toAdd.length} were added.`);
+      }
+      for (const file of toAdd) {
+        if (!file.type.startsWith('audio/')) continue;
+        const url = URL.createObjectURL(file);
+        state.bgm.tracks.push({
+          id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()),
+          name: file.name || 'Track',
+          url,
+          volume: 0.8,
+          blob: file,
+          type: file.type
+        });
+      }
+      renderBgmList();
+    }
+
+    function renderBgmList() {
+      bgmList.innerHTML = '';
+      if (!state.bgm.tracks.length) {
+        const empty = document.createElement('div');
+        empty.className = 'muted small';
+        empty.textContent = 'No music added. Add MP3 files above.';
+        bgmList.appendChild(empty);
+        return;
+      }
+
+      state.bgm.tracks.forEach((t, idx) => {
+        const row = document.createElement('div');
+        row.className = 'bgm-item';
+
+        const meta = document.createElement('div');
+        meta.className = 'bgm-meta';
+        const title = document.createElement('div');
+        title.className = 'bgm-title';
+        title.textContent = `${idx+1}. ${t.name}`;
+        const volWrap = document.createElement('div');
+        volWrap.className = 'bgm-vol-wrap';
+        const volLabel = document.createElement('div');
+        volLabel.className = 'bgm-sub';
+        volLabel.textContent = 'Volume';
+        const volSlider = document.createElement('input');
+        volSlider.type = 'range'; volSlider.min = '0'; volSlider.max = '1'; volSlider.step = '0.01';
+        volSlider.value = String(t.volume);
+        volSlider.addEventListener('input', () => {
+          t.volume = parseFloat(volSlider.value);
+          if (state.bgm.audio && state.bgm.currentIndex === idx) {
+            state.bgm.audio.volume = t.volume;
+          }
+        });
+        volSlider.disabled = state.running;
+        volWrap.append(volLabel, volSlider);
+        meta.append(title, volWrap);
+
+        const actions = document.createElement('div');
+        actions.className = 'bgm-actions';
+        const up = buttonIcon('↑', 'Move up');
+        up.addEventListener('click', () => moveBgm(idx, -1));
+        const down = buttonIcon('↓', 'Move down');
+        down.addEventListener('click', () => moveBgm(idx, +1));
+        const del = buttonIcon('✕', 'Remove', 'danger');
+        del.addEventListener('click', () => removeBgm(idx));
+        [up, down, del].forEach(b => b.disabled = state.running);
+        actions.append(up, down, del);
+
+        row.append(meta, actions);
+        bgmList.appendChild(row);
+      });
+    }
+
+    function moveBgm(idx, delta) {
+      const j = idx + delta;
+      if (j < 0 || j >= state.bgm.tracks.length) return;
+      const arr = state.bgm.tracks;
+      [arr[idx], arr[j]] = [arr[j], arr[idx]];
+
+      if (state.bgm.currentIndex === idx) state.bgm.currentIndex = j;
+      else if (state.bgm.currentIndex === j) state.bgm.currentIndex = idx;
+
+      renderBgmList();
+    }
+
+    function removeBgm(idx) {
+      const t = state.bgm.tracks[idx];
+      if (!t) return;
+      try { URL.revokeObjectURL(t.url); } catch {}
+      state.bgm.tracks.splice(idx, 1);
+      if (state.bgm.currentIndex >= state.bgm.tracks.length) {
+        state.bgm.currentIndex = Math.max(0, state.bgm.tracks.length - 1);
+      }
+      renderBgmList();
+    }
+
+    function clearBgm() {
+      state.bgm.tracks.forEach(t => { try { URL.revokeObjectURL(t.url); } catch {} });
+      state.bgm.tracks = [];
+      state.bgm.currentIndex = 0;
+      renderBgmList();
+    }
+
+    function bgmStart() {
+      if (!state.bgm.tracks.length) return;
+      if (!state.bgm.audio) {
+        state.bgm.audio = new Audio();
+        state.bgm.audio.preload = 'auto';
+        state.bgm.audio.addEventListener('ended', onBgmEnded);
+      }
+      const t = state.bgm.tracks[state.bgm.currentIndex];
+      if (!t) return;
+      state.bgm.audio.src = t.url;
+      state.bgm.audio.volume = t.volume;
+      state.bgm.playing = true;
+      state.bgm.audio.play().catch(()=>{ /* autoplay guard */ });
+    }
+
+    function onBgmEnded() {
+      if (!state.running) return;
+      const n = state.bgm.tracks.length;
+      if (!n) return;
+      state.bgm.currentIndex = (state.bgm.currentIndex + 1) % n;
+      const t = state.bgm.tracks[state.bgm.currentIndex];
+      state.bgm.audio.src = t.url;
+      state.bgm.audio.volume = t.volume;
+      state.bgm.audio.play().catch(()=>{});
+    }
+
+    function bgmPause() {
+      if (state.bgm.audio && !state.bgm.audio.paused) {
+        state.bgm.audio.pause();
+        state.bgm.playing = false;
+      }
+    }
+
+    function bgmResume() {
+      if (state.bgm.audio && state.running && !state.bgm.playing) {
+        state.bgm.playing = true;
+        state.bgm.audio.play().catch(()=>{});
+      }
+    }
+
+    function bgmStop() {
+      if (state.bgm.audio) {
+        try {
+          state.bgm.audio.pause();
+          state.bgm.audio.removeEventListener('ended', onBgmEnded);
+          state.bgm.audio.src = '';
+        } catch {}
+        state.bgm.audio = null;
+        state.bgm.playing = false;
+        state.bgm.currentIndex = 0;
+      }
+    }
+
+    // ---------- IndexedDB (Flows + Tracks) ----------
+    const DB_NAME = 'vibeFlowDB';
+    const DB_VERSION = 1;
+    const STORE_FLOWS = 'flows';
+    const STORE_TRACKS = 'tracks';
+    const OLD_STORAGE_KEY = 'exerciseTimer.routines.v1'; // migration
+
+    let dbPromise = null;
+
+    function idbOpen() {
+      if (dbPromise) return dbPromise;
+      dbPromise = new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onupgradeneeded = () => {
+          const db = req.result;
+          if (!db.objectStoreNames.contains(STORE_FLOWS)) {
+            const s = db.createObjectStore(STORE_FLOWS, { keyPath: 'name' });
+            s.createIndex('updatedAt', 'updatedAt');
+          }
+          if (!db.objectStoreNames.contains(STORE_TRACKS)) {
+            db.createObjectStore(STORE_TRACKS, { keyPath: 'hash' });
+          }
+        };
+        req.onsuccess = () => {
+          const db = req.result;
+          db.onversionchange = () => { db.close(); };
+          resolve(db);
+        };
+        req.onerror = () => reject(req.error);
+      });
+      return dbPromise;
+    }
+
+    async function dbGetAllFlows() {
+      const db = await idbOpen();
+      return new Promise((res, rej) => {
+        const tx = db.transaction(STORE_FLOWS, 'readonly');
+        const store = tx.objectStore(STORE_FLOWS);
+        const req = store.getAll();
+        req.onsuccess = () => res(req.result || []);
+        req.onerror = () => rej(req.error);
+      });
+    }
+
+    async function dbGetFlow(name) {
+      const db = await idbOpen();
+      return new Promise((res, rej) => {
+        const tx = db.transaction(STORE_FLOWS, 'readonly');
+        const store = tx.objectStore(STORE_FLOWS);
+        const req = store.get(name);
+        req.onsuccess = () => res(req.result || null);
+        req.onerror = () => rej(req.error);
+      });
+    }
+
+    async function dbPutFlow(flow) {
+      const db = await idbOpen();
+      return new Promise((res, rej) => {
+        const tx = db.transaction(STORE_FLOWS, 'readwrite');
+        const store = tx.objectStore(STORE_FLOWS);
+        const req = store.put(flow);
+        req.onsuccess = () => res(true);
+        req.onerror = () => rej(req.error);
+      });
+    }
+
+    async function dbDeleteFlow(name) {
+      const db = await idbOpen();
+      return new Promise((res, rej) => {
+        const tx = db.transaction(STORE_FLOWS, 'readwrite');
+        const store = tx.objectStore(STORE_FLOWS);
+        const req = store.delete(name);
+        req.onsuccess = () => res(true);
+        req.onerror = () => rej(req.error);
+      });
+    }
+
+    async function dbPutTrack(hash, blob) {
+      const db = await idbOpen();
+      return new Promise((res, rej) => {
+        const tx = db.transaction(STORE_TRACKS, 'readwrite');
+        const store = tx.objectStore(STORE_TRACKS);
+        const req = store.put({ hash, blob, type: blob.type || 'audio/mpeg' });
+        req.onsuccess = () => res(true);
+        req.onerror = () => rej(req.error);
+      });
+    }
+
+    async function dbGetTrack(hash) {
+      const db = await idbOpen();
+      return new Promise((res, rej) => {
+        const tx = db.transaction(STORE_TRACKS, 'readonly');
+        const store = tx.objectStore(STORE_TRACKS);
+        const req = store.get(hash);
+        req.onsuccess = () => res(req.result || null);
+        req.onerror = () => rej(req.error);
+      });
+    }
+
+    async function dbGetAllTrackKeys() {
+      const db = await idbOpen();
+      return new Promise((res, rej) => {
+        const tx = db.transaction(STORE_TRACKS, 'readonly');
+        const store = tx.objectStore(STORE_TRACKS);
+        const req = store.getAllKeys();
+        req.onsuccess = () => res(req.result || []);
+        req.onerror = () => rej(req.error);
+      });
+    }
+
+    async function dbDeleteTrack(hash) {
+      const db = await idbOpen();
+      return new Promise((res, rej) => {
+        const tx = db.transaction(STORE_TRACKS, 'readwrite');
+        const store = tx.objectStore(STORE_TRACKS);
+        const req = store.delete(hash);
+        req.onsuccess = () => res(true);
+        req.onerror = () => rej(req.error);
+      });
+    }
+
+    async function dbClearAll() {
+      const db = await idbOpen();
+      await new Promise((res, rej) => {
+        const tx = db.transaction(STORE_FLOWS, 'readwrite');
+        const store = tx.objectStore(STORE_FLOWS);
+        const req = store.clear();
+        req.onsuccess = () => res();
+        req.onerror = () => rej(req.error);
+      });
+      await new Promise((res, rej) => {
+        const tx = db.transaction(STORE_TRACKS, 'readwrite');
+        const store = tx.objectStore(STORE_TRACKS);
+        const req = store.clear();
+        req.onsuccess = () => res();
+        req.onerror = () => rej(req.error);
+      });
+    }
+
+    // Hashing for tracks (SHA-256)
+    async function hashBlobSHA256(blob) {
+      try {
+        const buf = await blob.arrayBuffer();
+        const digest = await crypto.subtle.digest('SHA-256', buf);
+        const bytes = new Uint8Array(digest);
+        return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+      } catch {
+        // Fallback if SubtleCrypto unavailable
+        return 'h' + Math.random().toString(36).slice(2);
+      }
+    }
+
+    // Garbage collect unreferenced tracks
+    async function gcTracks() {
+      try {
+        const flows = await dbGetAllFlows();
+        const used = new Set();
+        flows.forEach(f => (f.bgm || []).forEach(t => used.add(t.hash)));
+        const allKeys = await dbGetAllTrackKeys();
+        const toDelete = allKeys.filter(k => !used.has(k));
+        await Promise.all(toDelete.map(dbDeleteTrack));
+      } catch {
+        // ignore
+      }
+    }
+
+    // Migration from old localStorage routines to flows (without music)
+    async function migrateOldRoutinesIfAny() {
+      try {
+        const flows = await dbGetAllFlows();
+        if (flows && flows.length) return; // already have flows
+        const raw = localStorage.getItem(OLD_STORAGE_KEY);
+        if (!raw) return;
+        const savedOld = JSON.parse(raw);
+        const names = Object.keys(savedOld || {});
+        for (const name of names) {
+          const arr = savedOld[name] || [];
+          const flowRec = {
+            name,
+            exercises: arr.map(x => ({ name: x.name, seconds: x.seconds })),
+            bgm: [],
+            updatedAt: Date.now()
+          };
+          await dbPutFlow(flowRec);
+        }
+        // Do not remove old localStorage automatically; user can clear later
+      } catch {
+        // ignore
+      }
+    }
+
+    // ---------- Save / Load (Flows + Music) ----------
+    async function refreshSavedList() {
+      const flows = (await dbGetAllFlows()).sort((a,b) => a.name.localeCompare(b.name));
+      state.savedCache = flows;
+      savedListEl.innerHTML = '';
+      if (!flows.length) {
+        const empty = document.createElement('div');
+        empty.className = 'muted small';
+        empty.textContent = 'No saved flows yet.';
+        savedListEl.appendChild(empty);
+        return;
+      }
+      flows.forEach(flow => {
+        const row = document.createElement('div');
+        row.className = 'saved-item';
+
+        const left = document.createElement('div');
+        const totalTime = fmtMMSS((flow.exercises || []).reduce((a,x)=>a+x.seconds,0));
+        left.innerHTML = `<span class="title">${escapeHtml(flow.name)}</span>
+          <span class="muted small">— ${flow.exercises.length} items · ${totalTime} · ${flow.bgm?.length||0} track${(flow.bgm?.length||0)===1?'':'s'}</span>`;
+
+        const actions = document.createElement('div');
+        actions.style.display = 'flex'; actions.style.gap = '8px';
+        const loadBtn = document.createElement('button');
+        loadBtn.className = 'btn';
+        loadBtn.type = 'button';
+        loadBtn.textContent = 'Load';
+        loadBtn.addEventListener('click', async () => { await loadFlow(flow.name); });
+        const renameBtn = document.createElement('button');
+        renameBtn.className = 'btn ghost';
+        renameBtn.type = 'button';
+        renameBtn.textContent = 'Rename';
+        renameBtn.addEventListener('click', async () => { await renameFlow(flow.name); });
+        const delBtn = document.createElement('button');
+        delBtn.className = 'btn danger';
+        delBtn.type = 'button';
+        delBtn.textContent = 'Delete';
+        delBtn.addEventListener('click', async () => { await deleteFlow(flow.name); });
+        actions.append(loadBtn, renameBtn, delBtn);
+
+        row.append(left, actions);
+        savedListEl.appendChild(row);
+      });
+    }
+
+    async function saveFlow() {
+      const name = flowNameEl.value.trim();
+      if (!name) { alert('Enter a flow name.'); return; }
+      if (state.exercises.length === 0) { alert('Nothing to save. Add exercises first.'); return; }
+
+      // Check overwrite
+      const existing = await dbGetFlow(name);
+      if (existing && !confirm('Overwrite existing flow with this name?')) return;
+
+      // Prepare BGM: compute hashes and store blobs
+      const bgmMeta = [];
+      for (const t of state.bgm.tracks) {
+        let blob = t.blob;
+        try {
+          if (!blob && t.url && t.url.startsWith('blob:')) {
+            // Fetch blob URL if needed
+            const resp = await fetch(t.url);
+            blob = await resp.blob();
+          }
+        } catch {
+          // ignore
+        }
+        if (!blob) {
+          // If no blob available, skip this track (should be rare)
+          continue;
+        }
+        const hash = t.hash || await hashBlobSHA256(blob);
+        await dbPutTrack(hash, blob);
+        bgmMeta.push({ hash, name: t.name, volume: t.volume });
+        // Save back properties for current session
+        t.hash = hash;
+        t.blob = blob;
+        t.type = blob.type || t.type || 'audio/mpeg';
+      }
+
+      const flowRec = {
+        name,
+        exercises: state.exercises.map(e => ({ name: e.name, seconds: e.seconds })),
+        bgm: bgmMeta,
+        updatedAt: Date.now()
+      };
+
+      try {
+        await dbPutFlow(flowRec);
+        await refreshSavedList();
+        alert('Flow saved on this device.');
+      } catch (e) {
+        const msg = String(e && e.name || e || 'Unknown error');
+        if (/Quota/i.test(msg)) {
+          alert('Saving failed: storage quota exceeded.\nTry removing large music files or clearing some saved flows.');
+        } else {
+          alert('Saving failed. Error: ' + msg);
+        }
+      }
+    }
+
+    async function loadFlow(name) {
+      const flow = await dbGetFlow(name);
+      if (!flow) return;
+
+      // Load exercises
+      state.exercises = flow.exercises.map(x => ({
+        id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()),
+        name: x.name,
+        seconds: x.seconds
+      }));
+      renderList();
+
+      // Load BGM tracks
+      clearBgm();
+      for (const meta of (flow.bgm || [])) {
+        try {
+          const rec = await dbGetTrack(meta.hash);
+          if (!rec) continue;
+          const blob = rec.blob;
+          const url = URL.createObjectURL(blob);
+          state.bgm.tracks.push({
+            id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()),
+            name: meta.name,
+            url,
+            volume: meta.volume,
+            blob,
+            hash: meta.hash,
+            type: rec.type || blob.type || 'audio/mpeg'
+          });
+        } catch {
+          // skip track on error
+        }
+      }
+      renderBgmList();
+
+      flowNameEl.value = flow.name;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    async function renameFlow(oldName) {
+      const newName = prompt('New name:', oldName);
+      if (!newName || newName === oldName) return;
+      const exists = await dbGetFlow(newName);
+      if (exists && !confirm('A flow with that name exists. Overwrite?')) return;
+
+      const flow = await dbGetFlow(oldName);
+      if (!flow) return;
+      const newRec = { ...flow, name: newName, updatedAt: Date.now() };
+      await dbPutFlow(newRec);
+      await dbDeleteFlow(oldName);
+      await refreshSavedList();
+      if (flowNameEl.value.trim() === oldName) flowNameEl.value = newName;
+      await gcTracks();
+    }
+
+    async function deleteFlow(name) {
+      if (!confirm(`Delete "${name}"?`)) return;
+      await dbDeleteFlow(name);
+      await refreshSavedList();
+      await gcTracks();
+    }
+
+    async function clearAllSavedFlows() {
+      if (!confirm('Delete all saved flows on this device?')) return;
+      await dbClearAll();
+      await refreshSavedList();
+      try { localStorage.removeItem(OLD_STORAGE_KEY); } catch {}
+    }
+
+    // ---------- Reset (flow) ----------
+    function onReset() {
+      if (state.running) {
+        const ok = confirm('Stop the flow and clear the current list?');
+        if (!ok) return;
+        stopFlow(false);
+        if (state.exercises.length) {
+          state.exercises = [];
+          renderList();
+        } else {
+          recalcTotals();
+        }
+        $('#exName').value = '';
+        $('#exMin').value = '';
+        $('#exSec').value = '';
+        sessionCard.classList.add('hidden');
+        clearBgm();
+      } else {
+        if (!state.exercises.length && state.bgm.tracks.length === 0) return;
+        state.exercises = [];
+        renderList();
+        $('#exName').value = '';
+        $('#exMin').value = '';
+        $('#exSec').value = '';
+        sessionCard.classList.add('hidden');
+        clearBgm();
+      }
+    }
+
+    // ---------- Events ----------
+    $('#addForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = $('#exName').value.trim();
+      let m = clamp(parseInt($('#exMin').value || '0', 10), 0, 999);
+      let s = clamp(parseInt($('#exSec').value || '0', 10), 0, 59);
+      if (!name) { alert('Please enter an exercise name.'); return; }
+      if (m === 0 && s === 0) { alert('Duration must be greater than 0.'); return; }
+      addExercise(name, m, s);
+      $('#exName').value = '';
+      $('#exMin').value = '';
+      $('#exSec').value = '';
+      $('#exName').focus();
+    });
+
+    startBtn.addEventListener('click', startFlow);
+    pauseBtn.addEventListener('click', pauseFlow);
+    pauseBtn2.addEventListener('click', pauseFlow);
+    resetBtn.addEventListener('click', onReset);
+    finishBtn.addEventListener('click', () => stopFlow(true));
+    skipBtn.addEventListener('click', skipExercise);
+    backBtn.addEventListener('click', backExercise);
+
+    $('#saveBtn').addEventListener('click', () => { saveFlow(); });
+    $('#clearAllBtn').addEventListener('click', () => { clearAllSavedFlows(); });
+
+    toggleBeepsBtn.addEventListener('click', () => {
+      state.beepsOn = !state.beepsOn;
+      toggleBeepsBtn.textContent = state.beepsOn ? 'On' : 'Off';
+      toggleBeepsBtn.classList.toggle('ghost', !state.beepsOn);
+    });
+
+    beepWindowInput.addEventListener('change', () => {
+      state.beepWindowSec = clamp(parseInt(beepWindowInput.value || '5', 10), 1, 60);
+      beepWindowInput.value = String(state.beepWindowSec);
+    });
+
+    $('#testVoiceBtn').addEventListener('click', () => {
+      ensureAudio();
+      const sample = state.announceLang === 'en' ? 'Squat' : '下犬式';
+      speak(sample, {});
+    });
+    $('#testBeepsBtn').addEventListener('click', () => { testBeeps(); });
+
+    announceLangSel.addEventListener('change', () => {
+      state.announceLang = announceLangSel.value;
+      populateVoiceSelect();
+    });
+
+    voiceSelect.addEventListener('change', () => {
+      const lang = state.announceLang;
+      const idx = parseInt(voiceSelect.value, 10);
+      if (isNaN(idx)) return;
+      if (lang === 'en' && state.voicesEn[idx]) state.voiceEn = state.voicesEn[idx];
+      if (lang !== 'en' && state.voicesZh[idx]) state.voiceZh = state.voicesZh[idx];
+    });
+
+    voiceRate.addEventListener('input', () => {
+      state.voiceRate = parseFloat(voiceRate.value);
+      voiceRateVal.textContent = state.voiceRate.toFixed(2);
+    });
+    voicePitch.addEventListener('input', () => {
+      state.voicePitch = parseFloat(voicePitch.value);
+      voicePitchVal.textContent = state.voicePitch.toFixed(2);
+    });
+    voiceVolume.addEventListener('input', () => {
+      state.voiceVolume = parseFloat(voiceVolume.value);
+      voiceVolumeVal.textContent = state.voiceVolume.toFixed(2);
+    });
+
+    // BGM events
+    bgmAddBtn.addEventListener('click', () => bgmInput.click());
+    bgmInput.addEventListener('change', () => {
+      addBgmFiles(bgmInput.files);
+      bgmInput.value = '';
+    });
+    bgmClearBtn.addEventListener('click', () => {
+      if (!state.bgm.tracks.length) return;
+      if (!confirm('Remove all background music tracks?')) return;
+      clearBgm();
+    });
+
+    // Pre-unlock audio on any primary click for mobile browsers
+    document.body.addEventListener('click', () => { ensureAudio(); }, { once: true });
+
+    // ---------- Voices initialization ----------
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.onvoiceschanged = () => {
+        loadVoices();
+      };
+      setTimeout(loadVoices, 100);
+    }
+
+    // ---------- Init ----------
+    async function init() {
+      renderList();
+      toggleBeepsBtn.textContent = state.beepsOn ? 'On' : 'Off';
+      voiceRateVal.textContent = state.voiceRate.toFixed(2);
+      voicePitchVal.textContent = state.voicePitch.toFixed(2);
+      voiceVolumeVal.textContent = state.voiceVolume.toFixed(2);
+      announceLangSel.value = state.announceLang;
+      beepWindowInput.value = String(state.beepWindowSec);
+      populateVoiceSelect();
+      renderBgmList();
+      resetBtn.disabled = state.exercises.length === 0;
+
+      await idbOpen();
+      await migrateOldRoutinesIfAny();
+      await refreshSavedList();
+    }
+    init();
+  </script>
+
+
+</body></html>
