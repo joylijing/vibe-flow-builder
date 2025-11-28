@@ -255,19 +255,6 @@
 
     .file-hint { color: var(--muted); font-size: 0.9rem; }
 
-    .sound-status {
-      display: inline-flex; align-items: center; gap: 8px;
-      padding: 6px 10px; border-radius: 999px;
-      background: rgba(34,197,94,0.15);
-      border: 1px solid rgba(34,197,94,0.35);
-      color: #bff4d0; font-size: 0.85rem;
-    }
-    .sound-status.locked {
-      background: rgba(239,68,68,0.15);
-      border-color: rgba(239,68,68,0.35);
-      color: #ffd2d2;
-    }
-
     @media (max-width: 820px) {
       .add-form { grid-template-columns: 1.1fr 0.6fr 0.6fr; }
       .add-form .btn { grid-column: 1 / -1; }
@@ -325,7 +312,7 @@
         <button id="startBtn" type="button" class="btn ok" title="Start the flow">Start</button>
         <button id="pauseBtn" type="button" class="btn warn" title="Pause/Resume" disabled>Pause</button>
         <button id="resetBtn" type="button" class="btn ghost" title="Reset / Clear">Reset</button>
-        <span class="muted small" id="hintTapAudio" style="margin-left:auto;">Tip: iPhone users — flip the Ring/Silent switch to Ring and raise volume.</span>
+        <span class="muted small" id="hintTapAudio" style="margin-left:auto;">Tip: ensure your device volume is on.</span>
       </div>
     </section>
 
@@ -396,12 +383,10 @@
           </div>
         </div>
         <div class="controls">
-          <button id="enableSoundBtn" type="button" class="btn ok">Enable sound</button>
           <button id="testVoiceBtn" type="button" class="btn">Test voice</button>
           <button id="testBeepsBtn" type="button" class="btn ghost">Test beeps</button>
-          <span id="soundStatus" class="sound-status locked">Sound: Locked</span>
         </div>
-        <div class="muted small">Tip: On iPhone, make sure your Ring/Silent switch is set to Ring and volume is up. Mobile browsers require a tap to enable sound.</div>
+        <div class="muted small">Tip: For the most natural voices, enable “Enhanced/Neural” system voices in your OS/browser (e.g., Google/Microsoft/Siri voices).</div>
       </div>
     </section>
 
@@ -463,11 +448,6 @@
     function escapeHtml(s) {
       return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     }
-    const isIOS = (() => {
-      const ua = navigator.userAgent || navigator.vendor || window.opera || '';
-      const iOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-      return iOS;
-    })();
 
     // ---------- State ----------
     const state = {
@@ -480,7 +460,6 @@
       endTimeMs: 0,
       tickId: null,
       audioCtx: null,
-      audioUnlocked: false,
       beepsOn: true,
       beepWindowSec: 5,
 
@@ -495,8 +474,8 @@
       voicePitch: 1.05,
       voiceVolume: 0.9,
 
-      // Saved flows
-      savedCache: [],
+      // Saved flows (fetched from IndexedDB when needed)
+      savedCache: [], // [{name, exercises[], bgm[], updatedAt}]
 
       // Background music
       bgm: {
@@ -543,9 +522,6 @@
     const voicePitchVal = $('#voicePitchVal');
     const voiceVolumeVal = $('#voiceVolumeVal');
 
-    const soundStatus = $('#soundStatus');
-    const enableSoundBtn = $('#enableSoundBtn');
-
     // BGM refs
     const bgmInput = $('#bgmInput');
     const bgmAddBtn = $('#bgmAddBtn');
@@ -553,25 +529,11 @@
     const bgmList = $('#bgmList');
 
     // ---------- Audio (Beeps) ----------
-    function updateSoundStatus() {
-      if (state.audioUnlocked) {
-        soundStatus.textContent = 'Sound: Enabled';
-        soundStatus.classList.remove('locked');
-      } else {
-        soundStatus.textContent = 'Sound: Locked';
-        soundStatus.classList.add('locked');
-      }
-    }
-
     function ensureAudio() {
       if (!state.audioCtx) {
         const Ctx = window.AudioContext || window.webkitAudioContext;
         if (!Ctx) return null;
-        try {
-          state.audioCtx = new Ctx({ latencyHint: 'interactive' });
-        } catch {
-          state.audioCtx = new Ctx();
-        }
+        state.audioCtx = new Ctx();
       }
       if (state.audioCtx.state === 'suspended') {
         state.audioCtx.resume().catch(()=>{});
@@ -579,68 +541,48 @@
       return state.audioCtx;
     }
 
-    // Prime/unlock audio on iOS by playing a tiny click
-    function primeAudio({ playTest = true } = {}) {
-      const ctx = ensureAudio();
-      if (!ctx) return false;
-
-      const resumeMaybe = ctx.resume?.() || Promise.resolve();
-      // Even if resume is async, starting a very short osc in the gesture handler works in iOS
-      try {
-        const now = ctx.currentTime + 0.001;
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        gain.gain.setValueAtTime(playTest ? 0.003 : 0.0001, now);
-        osc.connect(gain).connect(ctx.destination);
-        osc.start(now);
-        // linear ramp to near-zero and stop quickly
-        gain.gain.linearRampToValueAtTime(0.0001, now + 0.02);
-        osc.stop(now + 0.03);
-        state.audioUnlocked = true;
-        updateSoundStatus();
-        return true;
-      } catch {
-        // Best effort
-        return false;
-      } finally {
-        Promise.resolve(resumeMaybe).catch(()=>{});
-      }
-    }
-
-    // More Safari-friendly beep (linear ramps; immediate start)
-    function beep({freq=880, dur=140, type='sine', vol=0.18}={}) {
+    function beep({freq=880, dur=120, type='sine', vol=0.15}={}) {
       if (!state.beepsOn) return;
       const ctx = ensureAudio();
       if (!ctx) return;
-      if (ctx.state === 'suspended') { ctx.resume().catch(()=>{}); }
-
-      const now = ctx.currentTime + 0.001;
+      const now = ctx.currentTime;
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = type;
-      try { osc.frequency.setValueAtTime(freq, now); } catch { osc.frequency.value = freq; }
-      gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.linearRampToValueAtTime(vol, now + 0.01);
-      gain.gain.linearRampToValueAtTime(0.0001, now + dur/1000);
+      osc.frequency.setValueAtTime(freq, now);
+      gain.gain.setValueAtTime(0, now);
       osc.connect(gain).connect(ctx.destination);
+      gain.gain.linearRampToValueAtTime(vol, now + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + dur/1000);
       osc.start(now);
       osc.stop(now + dur/1000 + 0.02);
     }
 
     function testBeeps() {
-      const ok = primeAudio({ playTest: false });
+      const ctx = ensureAudio(); if (!ctx) return;
       const n = clamp(parseInt(beepWindowInput.value || '5', 10), 1, 60);
-      // Play a quick rising series via setTimeout for iOS reliability
+      const start = ctx.currentTime + 0.05;
       for (let i = 0; i < n; i++) {
-        const step = i;
-        setTimeout(() => {
-          const secsLeft = n - i;
-          const freq = 700 + step * 30;
-          beep({ freq, dur: 130, type: 'sine', vol: 0.2 });
-        }, i * 350);
+        const t = start + i * 0.4;
+        const secsLeft = n - i;
+        const step = Math.max(0, n - secsLeft);
+        const freq = 700 + step * 30;
+        scheduleBeepAt(t, {freq, dur:130, type:'sine', vol:0.18});
       }
-      setTimeout(() => beep({ freq: 1020, dur: 200, type: 'triangle', vol: 0.22 }), n * 350 + 150);
+      scheduleBeepAt(start + n * 0.4 + 0.2, {freq:1020, dur:200, type:'triangle', vol:0.2});
+    }
+    function scheduleBeepAt(when, opts={}) {
+      const ctx = ensureAudio(); if (!ctx) return;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = opts.type || 'sine';
+      osc.frequency.setValueAtTime(opts.freq || 880, when);
+      gain.gain.setValueAtTime(0.0001, when);
+      gain.gain.exponentialRampToValueAtTime(opts.vol || 0.15, when + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, when + (opts.dur||120)/1000);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(when);
+      osc.stop(when + (opts.dur||120)/1000 + 0.02);
     }
 
     // ---------- Voice (SpeechSynthesis) ----------
@@ -890,9 +832,7 @@
         if (!confirm('Restart the flow?')) return;
         stopFlow();
       }
-
-      // Make sure audio is unlocked before we start (iOS)
-      primeAudio({ playTest: false });
+      ensureAudio();
 
       state.running = true;
       state.paused = false;
@@ -956,7 +896,7 @@
         if (state.beepsOn && whole !== lastWhole && whole > 0 && whole <= state.beepWindowSec) {
           const step = Math.max(0, state.beepWindowSec - whole);
           const freq = 700 + step * 30;
-          beep({freq, dur: 140, type: 'sine', vol: 0.2});
+          beep({freq, dur: 140, type: 'sine', vol: 0.16});
         }
         lastWhole = whole;
 
@@ -1016,8 +956,8 @@
 
       if (finished) {
         setTimeout(()=> {
-          beep({freq: 900, dur: 140, type:'triangle', vol: 0.22});
-          setTimeout(()=> beep({freq: 1200, dur: 180, type:'triangle', vol: 0.22}), 200);
+          beep({freq: 900, dur: 140, type:'triangle', vol: 0.18});
+          setTimeout(()=> beep({freq: 1200, dur: 180, type:'triangle', vol: 0.18}), 200);
         }, 50);
       }
     }
@@ -1201,8 +1141,6 @@
       if (!state.bgm.audio) {
         state.bgm.audio = new Audio();
         state.bgm.audio.preload = 'auto';
-        state.bgm.audio.playsInline = true;
-        state.bgm.audio.setAttribute('playsinline', '');
         state.bgm.audio.addEventListener('ended', onBgmEnded);
       }
       const t = state.bgm.tracks[state.bgm.currentIndex];
@@ -1398,6 +1336,7 @@
         const bytes = new Uint8Array(digest);
         return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
       } catch {
+        // Fallback if SubtleCrypto unavailable
         return 'h' + Math.random().toString(36).slice(2);
       }
     }
@@ -1435,6 +1374,7 @@
           };
           await dbPutFlow(flowRec);
         }
+        // Do not remove old localStorage automatically; user can clear later
       } catch {
         // ignore
       }
@@ -1500,14 +1440,21 @@
         let blob = t.blob;
         try {
           if (!blob && t.url && t.url.startsWith('blob:')) {
+            // Fetch blob URL if needed
             const resp = await fetch(t.url);
             blob = await resp.blob();
           }
-        } catch {}
-        if (!blob) continue;
+        } catch {
+          // ignore
+        }
+        if (!blob) {
+          // If no blob available, skip this track (should be rare)
+          continue;
+        }
         const hash = t.hash || await hashBlobSHA256(blob);
         await dbPutTrack(hash, blob);
         bgmMeta.push({ hash, name: t.name, volume: t.volume });
+        // Save back properties for current session
         t.hash = hash;
         t.blob = blob;
         t.type = blob.type || t.type || 'audio/mpeg';
@@ -1563,7 +1510,9 @@
             hash: meta.hash,
             type: rec.type || blob.type || 'audio/mpeg'
           });
-        } catch {}
+        } catch {
+          // skip track on error
+        }
       }
       renderBgmList();
 
@@ -1668,15 +1617,11 @@
     });
 
     $('#testVoiceBtn').addEventListener('click', () => {
-      primeAudio({ playTest: false });
+      ensureAudio();
       const sample = state.announceLang === 'en' ? 'Squat' : '下犬式';
       speak(sample, {});
     });
     $('#testBeepsBtn').addEventListener('click', () => { testBeeps(); });
-    enableSoundBtn.addEventListener('click', () => {
-      const ok = primeAudio({ playTest: true });
-      if (!ok) alert('Unable to enable sound. Try tapping again, disabling Silent mode, and raising volume.');
-    });
 
     announceLangSel.addEventListener('change', () => {
       state.announceLang = announceLangSel.value;
@@ -1716,12 +1661,8 @@
       clearBgm();
     });
 
-    // Pre-unlock audio on any primary user gesture (more robust on iOS)
-    ['pointerdown','touchstart','mousedown','keydown'].forEach(evt => {
-      document.addEventListener(evt, () => {
-        if (!state.audioUnlocked) primeAudio({ playTest: false });
-      }, { once: true, passive: true });
-    });
+    // Pre-unlock audio on any primary click for mobile browsers
+    document.body.addEventListener('click', () => { ensureAudio(); }, { once: true });
 
     // ---------- Voices initialization ----------
     if ('speechSynthesis' in window) {
@@ -1743,7 +1684,6 @@
       populateVoiceSelect();
       renderBgmList();
       resetBtn.disabled = state.exercises.length === 0;
-      updateSoundStatus();
 
       await idbOpen();
       await migrateOldRoutinesIfAny();
